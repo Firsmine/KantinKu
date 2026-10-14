@@ -64,4 +64,14 @@ class AuthController extends Controller
             'message' => 'Logout success'
         ]);
     }
+
+    public function profile(Request $request)
+    {
+        $user = $request->user();
+        return response()->json([
+            'success' => true,
+            'message' => 'Get profile data success',
+            'data' => $user
+        ]);
+    }
 }
