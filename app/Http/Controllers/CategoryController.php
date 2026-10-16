@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Broadcasting\Mercure\CachingTokenProvider;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 class CategoryController extends Controller
@@ -103,14 +104,61 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Action forbidden.'
+            ]);
+        }
+        $data = $request->validate([
+            'name' => ['string|required|max:255', Rule::unique('categories', 'name')->ignore($category->id)],
+            'description' => 'nullable|string'
+        ]);
+        try {
+            $category->update($data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Update category success',
+                'data' => $category
+            ], 201);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update category'
+            ], 500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Action forbidden.'
+            ]);
+        }
+        if ($category->products()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a category that has products'
+            ], 409);
+        }
+        try {
+            $category->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Delete category success',
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete a category.'
+            ]);
+        }
     }
 }
