@@ -43,7 +43,29 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Action forbidden.'
+            ]);
+        }
+        $data = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string'
+        ]);
+        try {
+            $category = Category::create($data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Create category success',
+                'data' => $category
+            ], 201);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create category.'
+            ], 500);
+        }
     }
 
     /**
