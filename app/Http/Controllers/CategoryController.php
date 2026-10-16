@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Throwable;
 
 class CategoryController extends Controller
 {
@@ -12,7 +13,21 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //
+        try {
+            $categories = Category::query()->withCount('products')->orderBy('name')->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Get categories success',
+                'data' => $categories
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get categories',
+            ], 500);
+        }
     }
 
     /**
