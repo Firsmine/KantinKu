@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use Illuminate\Broadcasting\Mercure\CachingTokenProvider;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -73,7 +74,20 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
-        //
+        try {
+            $category->loadCount('products');
+            return response()->json([
+                'success' => true,
+                'message' => 'Get 1 category success',
+                'data' => $category
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get 1 category.'
+            ], 500);
+        }
     }
 
     /**
