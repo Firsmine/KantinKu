@@ -54,7 +54,43 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Action forbidden.'
+            ]);
+        }
+        $data = $request->validate([
+            'category_id' => 'required|integer|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable'
+        ]);
+        try {
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')
+                    ->store('products', 'public');
+            }
+
+            $product = Product::create($data);
+            $product->load('category');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product created successfully.',
+                'data' => $product,
+            ], 201);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create product.',
+                'errors' => ['code' => 'INTERNAL_SERVER_ERROR'],
+            ], 500);
+        }
     }
 
     /**
