@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -209,6 +210,28 @@ class ProductController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete product.'
+            ], 500);
+        }
+    }
+    public function byCategory(Category $category)
+    {
+        try {
+            $products = $category->products()
+                ->with('category')
+                ->orderBy('name')
+                ->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Get category products successfully.',
+                'data' => $products,
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get category products.',
             ], 500);
         }
     }
