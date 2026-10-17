@@ -4,15 +4,41 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Throwable;
 
 class ProductController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        try {
+            $product = Product::query()->with('category')->orderBy('name')->paginate(10);
+
+            if ($request->filled('category_id')) {
+                $product->where('category_id', $request->category_id);
+            }
+            if ($request->filled('search')) {
+                $product->where(
+                    'name',
+                    'like',
+                    '%' . $request->search . '%'
+                );
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Get products successfully.',
+                'data' => $query->orderBy('name')->paginate(10),
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get products.',
+            ], 500);
+        }
     }
 
     /**
