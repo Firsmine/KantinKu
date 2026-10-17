@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class ProductController extends Controller
@@ -127,7 +128,51 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return $this->forbidden();
+        }
+
+        $data = $request->validate([
+            'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'stock' => ['sometimes', 'required', 'integer', 'min:0'],
+            'image' => ['sometimes', 'nullable', 'max:2048'],
+        ]);
+
+        try {
+            $oldImage = $product->image;
+            $newImage = null;
+
+            if ($request->hasFile('image')) {
+                $newImage = $request->file('image')
+                    ->store('products', 'public');
+
+                $data['image'] = $newImage;
+            }
+
+            $product->update($data);
+
+            if ($newImage && $oldImage) {
+                Storage::disk('public')->delete($oldImage);
+            }
+
+            $product->load('category');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product updated successfully.',
+                'data' => $product->fresh()->load('category'),
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update product.'
+            ], 500);
+        }
     }
 
     /**
