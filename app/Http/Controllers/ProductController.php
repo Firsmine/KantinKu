@@ -98,7 +98,20 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        //
+        try {
+            $product->loadCount('categories');
+            return response()->json([
+                'success' => true,
+                'message' => 'Get 1 product success',
+                'data' => $product
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get 1 product.'
+            ], 500);
+        }
     }
 
     /**
