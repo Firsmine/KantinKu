@@ -178,8 +178,38 @@ class ProductController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
-        //
+        if (!$request->user()?->isAdmin()) {
+            return $this->forbidden();
+        }
+
+        if ($product->orderItems()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a product used in an order.'
+            ], 409);
+        }
+
+        try {
+            $image = $product->image;
+            $product->delete();
+
+            if ($image) {
+                Storage::disk('public')->delete($image);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product deleted successfully.',
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete product.'
+            ], 500);
+        }
     }
 }
