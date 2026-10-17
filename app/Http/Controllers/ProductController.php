@@ -212,4 +212,11 @@ class ProductController extends Controller
             ], 500);
         }
     }
+    private function forbidden()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Only admins can manage products.',
+        ], 403);
+    }
 }
