@@ -274,6 +274,28 @@ class OrderController extends Controller
         }
     }
 
+    public function myOrders(Request $request)
+    {
+        try {
+            $orders = $request->user()
+                ->orders()
+                ->with('items.product.category')
+                ->latest()
+                ->paginate(10);
+            return response()->json([
+                'success' => true,
+                'message' => 'Get your orders successfully.',
+                'data' => $orders,
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get your orders.'
+            ], 500);
+        }
+    }
+
     /**
      * Remove the specified resource from storage.
      */
