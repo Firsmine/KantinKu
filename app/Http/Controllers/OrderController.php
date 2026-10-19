@@ -184,9 +184,94 @@ class OrderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order)
     {
-        //
+        $user = $request->user();
+        $isAdmin = $user->isAdmin();
+
+        if (!$isAdmin && $order->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden.'
+            ], 403);
+        }
+        $data = $request->validate([
+            'status' => [
+                'required',
+                'in:pending,processing,completed,cancelled',
+            ],
+        ]);
+        $newStatus = $data['status'];
+
+        if (!$isAdmin) {
+            if (
+                $order->status !== 'pending'
+                || $newStatus !== 'cancelled'
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customers can only cancel pending orders.',
+                    'errors' => ['code' => 'INVALID_STATUS_CHANGE'],
+                ], 422);
+            }
+        } else {
+            $allowed = match ($order->status) {
+                'pending' => ['processing', 'cancelled'],
+                'processing' => ['completed'],
+                default => [],
+            };
+
+            if (!in_array($newStatus, $allowed, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This status transition is not allowed.',
+                ], 422);
+            }
+        }
+        try {
+            DB::transaction(function () use ($order, $newStatus) {
+
+                $lockedOrder = Order::query()
+                    ->lockForUpdate()
+                    ->findOrFail($order->id);
+
+                if ($lockedOrder->status !== $order->status) {
+                    throw ValidationException::withMessages([
+                        'status' => ['The order status has changed. Reload and try again.'],
+                    ]);
+                }
+
+                if ($newStatus === 'cancelled') {
+                    foreach ($lockedOrder->items as $item) {
+                        Product::query()
+                            ->whereKey($item->product_id)
+                            ->lockForUpdate()
+                            ->firstOrFail()
+                            ->increment('stock', $item->quantity);
+                    }
+                }
+                $lockedOrder->update(['status' => $newStatus]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated successfully.',
+                'data' => $order->fresh()->load('items.product'),
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not update order status.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order status.'
+            ], 500);
+        }
     }
 
     /**
