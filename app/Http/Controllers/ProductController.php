@@ -31,7 +31,7 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Get products successfully.',
-                'data' => $query->orderBy('name')->paginate(10),
+                'data' => $product->orderBy('name')->paginate(10),
             ], 200);
         } catch (Throwable $e) {
             report($e);
@@ -90,7 +90,6 @@ class ProductController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create product.',
-                'errors' => ['code' => 'INTERNAL_SERVER_ERROR'],
             ], 500);
         }
     }
@@ -134,12 +133,12 @@ class ProductController extends Controller
         }
 
         $data = $request->validate([
-            'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'stock' => ['sometimes', 'required', 'integer', 'min:0'],
-            'image' => ['sometimes', 'nullable', 'max:2048'],
+            'category_id' => 'sometimes|required|integer|exists:categories,id',
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|nullable|string',
+            'price' => 'sometimes|required|numeric|min:0',
+            'stock' => 'sometimes|required|integer|min:0',
+            'image' => 'sometimes|nullable',
         ]);
 
         try {
