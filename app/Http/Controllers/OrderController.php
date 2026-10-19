@@ -10,9 +10,28 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        try {
+            $order = Order::query()->with(['user:id,name,username', 'items.product.category'])->latest()->paginate(10);
+
+            if (!$request->user()->isAdmin()) {
+                $order->where('user_id', $request->user()->id);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Get orders successfully.',
+                'data' => $order
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get orders.',
+            ], 500);
+        }
     }
 
     /**
