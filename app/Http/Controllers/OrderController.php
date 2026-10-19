@@ -171,7 +171,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
-    }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -296,6 +296,40 @@ class OrderController extends Controller
         }
     }
 
+    public function adminIndex(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden.'
+            ], 403);
+        }
+        $data = $request->validate([
+            'status' => [
+                'sometimes',
+                'in:pending,processing,completed,cancelled',
+            ],
+        ]);
+        try {
+            $order = Order::query()
+                ->with(['user:id,name,username', 'items.product'])->latest()->paginate(10);
+
+            if (isset($data['status'])) {
+                $query->where('status', $data['status']);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Get all orders successfully.',
+                'data' => $order,
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get all orders.'
+            ], 500);
+        }
+    }
     /**
      * Remove the specified resource from storage.
      */
