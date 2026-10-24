@@ -111,7 +111,7 @@ class CategoryController extends Controller
             ]);
         }
         $data = $request->validate([
-            'name' => ['string|required|max:255', Rule::unique('categories', 'name')->ignore($category->id)],
+            'name' => ['string', 'sometimes', 'max:255', Rule::unique('categories', 'name')->ignore($category->id)],
             'description' => 'nullable|string'
         ]);
         try {

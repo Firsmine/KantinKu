@@ -45,9 +45,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/orders/{order}', [OrderController::class, 'show']);
-        Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
         Route::get('/my-orders', [OrderController::class, 'myOrders']);
         // ADMIN - Order
+        Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
         Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     });
 });

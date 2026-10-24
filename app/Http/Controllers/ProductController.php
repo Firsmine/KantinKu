@@ -16,7 +16,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $product = Product::query()->with('category')->orderBy('name')->paginate(10);
+            $product = Product::query()->with('category');
 
             if ($request->filled('category_id')) {
                 $product->where('category_id', $request->category_id);
@@ -28,10 +28,11 @@ class ProductController extends Controller
                     '%' . $request->search . '%'
                 );
             }
+            $products = $product->paginate(10);
             return response()->json([
                 'success' => true,
                 'message' => 'Get products successfully.',
-                'data' => $product->orderBy('name')->paginate(10),
+                'data' => $products,
             ], 200);
         } catch (Throwable $e) {
             report($e);
@@ -100,7 +101,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         try {
-            $product->loadCount('categories');
+            $product->with('categories');
             return response()->json([
                 'success' => true,
                 'message' => 'Get 1 product success',

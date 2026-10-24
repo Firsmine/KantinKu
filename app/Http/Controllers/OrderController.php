@@ -7,7 +7,6 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Nette\Schema\ValidationException;
 use Throwable;
 
 class OrderController extends Controller
@@ -18,16 +17,18 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $order = Order::query()->with(['user:id,name,username', 'items.product.category'])->latest()->paginate(10);
+            $order = Order::query()->with(['user:id,name,username', 'items.product.category']);
 
             if (!$request->user()->isAdmin()) {
                 $order->where('user_id', $request->user()->id);
             }
 
+            $orders = $order->latest()->paginate(10);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Get orders successful.',
-                'data' => $order
+                'data' => $orders
             ], 200);
         } catch (Throwable $e) {
             report($e);
@@ -312,15 +313,16 @@ class OrderController extends Controller
         ]);
         try {
             $order = Order::query()
-                ->with(['user:id,name,username', 'items.product'])->latest()->paginate(10);
+                ->with(['user:id,name,username', 'items.product']);
 
             if (isset($data['status'])) {
                 $query->where('status', $data['status']);
             }
+            $orders = $order->latest()->paginate(10);
             return response()->json([
                 'success' => true,
                 'message' => 'Get all orders successfully.',
-                'data' => $order,
+                'data' => $orders,
             ], 200);
         } catch (Throwable $e) {
             report($e);
